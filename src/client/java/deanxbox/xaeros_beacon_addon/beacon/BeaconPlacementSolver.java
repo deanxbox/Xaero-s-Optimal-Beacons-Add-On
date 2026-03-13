@@ -1,8 +1,9 @@
 package deanxbox.xaeros_beacon_addon.beacon;
 
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class BeaconPlacementSolver {
@@ -27,21 +28,22 @@ public final class BeaconPlacementSolver {
         return switch (preference) {
             case FULL_AREA -> solveFullArea(area, tier, snapMode, minimumColumns, minimumRows);
             case MINIMIZE_BEACONS -> solveMinimizeBeacons(area, tier, snapMode, minimumColumns, minimumRows);
+            case HEX_OPTIMAL -> solveHexOptimal(area, tier, snapMode, minimumColumns, minimumRows);
         };
     }
 
     private static BeaconPlacementPlan solveFullArea(BlockArea area, BeaconTier tier, BeaconPlanSnapMode snapMode, int minimumColumns, int minimumRows) {
-        BeaconPlacementPlan bestPlan = buildPlan(area, tier, BeaconPlanPreference.FULL_AREA, snapMode, minimumColumns, minimumRows);
+        BeaconPlacementPlan bestPlan = buildGridPlan(area, tier, BeaconPlanPreference.FULL_AREA, snapMode, minimumColumns, minimumRows);
         if (bestPlan.coverageRatio() >= 0.9999D || snapMode == BeaconPlanSnapMode.FREE) {
             return bestPlan;
         }
 
-        int maxColumns = maxGridCount(area.minX(), area.maxX(), tier.horizontalRadius());
-        int maxRows = maxGridCount(area.minZ(), area.maxZ(), tier.horizontalRadius());
+        int maxColumns = maxGridCount(area.minX(), area.maxX(), tier.horizontalRadius(), snapMode);
+        int maxRows = maxGridCount(area.minZ(), area.maxZ(), tier.horizontalRadius(), snapMode);
 
         for (int columns = minimumColumns; columns <= maxColumns; columns++) {
             for (int rows = minimumRows; rows <= maxRows; rows++) {
-                BeaconPlacementPlan candidate = buildPlan(area, tier, BeaconPlanPreference.FULL_AREA, snapMode, columns, rows);
+                BeaconPlacementPlan candidate = buildGridPlan(area, tier, BeaconPlanPreference.FULL_AREA, snapMode, columns, rows);
                 if (candidate.coverageRatio() < 0.9999D) {
                     continue;
                 }
@@ -55,17 +57,17 @@ public final class BeaconPlacementSolver {
             return bestPlan;
         }
 
-        return buildPlan(area, tier, BeaconPlanPreference.FULL_AREA, BeaconPlanSnapMode.FREE, minimumColumns, minimumRows);
+        return buildGridPlan(area, tier, BeaconPlanPreference.FULL_AREA, BeaconPlanSnapMode.FREE, minimumColumns, minimumRows);
     }
 
     private static BeaconPlacementPlan solveMinimizeBeacons(BlockArea area, BeaconTier tier, BeaconPlanSnapMode snapMode, int fullColumns, int fullRows) {
         BeaconPlacementPlan bestPlan = null;
-        int maxColumns = snapMode == BeaconPlanSnapMode.CHUNK_GRID ? maxGridCount(area.minX(), area.maxX(), tier.horizontalRadius()) : fullColumns;
-        int maxRows = snapMode == BeaconPlanSnapMode.CHUNK_GRID ? maxGridCount(area.minZ(), area.maxZ(), tier.horizontalRadius()) : fullRows;
+        int maxColumns = maxGridCount(area.minX(), area.maxX(), tier.horizontalRadius(), snapMode);
+        int maxRows = maxGridCount(area.minZ(), area.maxZ(), tier.horizontalRadius(), snapMode);
 
         for (int columns = 1; columns <= Math.max(1, maxColumns); columns++) {
             for (int rows = 1; rows <= Math.max(1, maxRows); rows++) {
-                BeaconPlacementPlan candidate = buildPlan(area, tier, BeaconPlanPreference.MINIMIZE_BEACONS, snapMode, columns, rows);
+                BeaconPlacementPlan candidate = buildGridPlan(area, tier, BeaconPlanPreference.MINIMIZE_BEACONS, snapMode, columns, rows);
                 if (candidate.coverageRatio() < MINIMIZE_BEACONS_AREA_TARGET) {
                     continue;
                 }
@@ -84,7 +86,30 @@ public final class BeaconPlacementSolver {
         return solveFullArea(area, tier, snapMode, fullColumns, fullRows);
     }
 
-    private static BeaconPlacementPlan buildPlan(
+    private static BeaconPlacementPlan solveHexOptimal(BlockArea area, BeaconTier tier, BeaconPlanSnapMode snapMode, int minimumColumns, int minimumRows) {
+        BeaconPlacementPlan bestPlan = null;
+        int maxColumns = Math.max(minimumColumns + 2, maxGridCount(area.minX(), area.maxX(), tier.horizontalRadius(), snapMode));
+        int maxRows = Math.max(minimumRows + 2, maxGridCount(area.minZ(), area.maxZ(), tier.horizontalRadius(), BeaconPlanSnapMode.FREE));
+
+        for (int columns = Math.max(1, minimumColumns - 1); columns <= maxColumns; columns++) {
+            for (int rows = Math.max(1, minimumRows); rows <= maxRows; rows++) {
+                BeaconPlacementPlan candidate = buildHexPlan(area, tier, snapMode, columns, rows);
+                if (bestPlan == null
+                    || candidate.coverageRatio() > bestPlan.coverageRatio()
+                    || (sameCoverage(candidate, bestPlan) && candidate.beaconCount() < bestPlan.beaconCount())) {
+                    bestPlan = candidate;
+                }
+            }
+        }
+
+        return bestPlan != null ? bestPlan : solveFullArea(area, tier, snapMode, minimumColumns, minimumRows);
+    }
+
+    private static boolean sameCoverage(BeaconPlacementPlan left, BeaconPlacementPlan right) {
+        return Math.abs(left.coverageRatio() - right.coverageRatio()) < 0.0001D;
+    }
+
+    private static BeaconPlacementPlan buildGridPlan(
         BlockArea area,
         BeaconTier tier,
         BeaconPlanPreference preference,
@@ -94,16 +119,77 @@ public final class BeaconPlacementSolver {
     ) {
         List<Integer> xCenters = distributeCenters(area.minX(), area.maxX(), tier.horizontalRadius(), columns, snapMode);
         List<Integer> zCenters = distributeCenters(area.minZ(), area.maxZ(), tier.horizontalRadius(), rows, snapMode);
-
         List<BeaconPlacement> placements = new ArrayList<>(xCenters.size() * zCenters.size());
         for (int x : xCenters) {
             for (int z : zCenters) {
                 placements.add(new BeaconPlacement(x, z, tier));
             }
         }
+        return buildPlan(area, tier, preference, snapMode, placements);
+    }
 
-        double coverageRatio = calculateCoverageRatio(area, tier.horizontalRadius(), xCenters, zCenters);
+    private static BeaconPlacementPlan buildHexPlan(BlockArea area, BeaconTier tier, BeaconPlanSnapMode snapMode, int columns, int rows) {
+        List<Integer> zCenters = distributeCenters(area.minZ(), area.maxZ(), tier.horizontalRadius(), rows, BeaconPlanSnapMode.FREE);
+        List<BeaconPlacement> placements = new ArrayList<>();
+        int horizontalShift = Math.max(1, tier.coverageDiameter() / 2);
+
+        for (int rowIndex = 0; rowIndex < zCenters.size(); rowIndex++) {
+            List<Integer> xCenters = distributeCenters(area.minX(), area.maxX(), tier.horizontalRadius(), columns, snapMode);
+            if ((rowIndex & 1) == 1) {
+                xCenters = staggeredCenters(xCenters, area.minX(), area.maxX(), tier.horizontalRadius(), horizontalShift, snapMode);
+            }
+            int z = zCenters.get(rowIndex);
+            for (int x : xCenters) {
+                placements.add(new BeaconPlacement(x, z, tier));
+            }
+        }
+
+        return buildPlan(area, tier, BeaconPlanPreference.HEX_OPTIMAL, snapMode, placements);
+    }
+
+    private static BeaconPlacementPlan buildPlan(
+        BlockArea area,
+        BeaconTier tier,
+        BeaconPlanPreference preference,
+        BeaconPlanSnapMode snapMode,
+        List<BeaconPlacement> placements
+    ) {
+        double coverageRatio = calculateCoverageRatio(area, placements);
         return new BeaconPlacementPlan(area, tier, preference, snapMode, coverageRatio, List.copyOf(placements));
+    }
+
+    private static List<Integer> staggeredCenters(List<Integer> baseCenters, int min, int max, int radius, int shift, BeaconPlanSnapMode snapMode) {
+        if (baseCenters.isEmpty()) {
+            return baseCenters;
+        }
+        int minCenter = min + radius;
+        int maxCenter = max - radius;
+        Set<Integer> unique = new HashSet<>();
+        List<Integer> staggered = new ArrayList<>();
+        for (int center : baseCenters) {
+            int shiftedCenter = Math.max(minCenter, Math.min(maxCenter, center + shift));
+            if (snapMode == BeaconPlanSnapMode.CHUNK_GRID) {
+                shiftedCenter = nearestChunkCenter(shiftedCenter, minCenter, maxCenter);
+            }
+            if (unique.add(shiftedCenter)) {
+                staggered.add(shiftedCenter);
+            }
+        }
+        if (!staggered.isEmpty() && staggered.get(0) - radius > min && unique.add(minCenter)) {
+            staggered.add(0, minCenter);
+        }
+        if (!staggered.isEmpty() && staggered.get(staggered.size() - 1) + radius < max && unique.add(maxCenter)) {
+            staggered.add(maxCenter);
+        }
+        return staggered.stream().sorted().collect(Collectors.toList());
+    }
+
+    private static int nearestChunkCenter(int preferredCenter, int minCenter, int maxCenter) {
+        int lower = ((preferredCenter - 8) / 16) * 16 + 8;
+        int upper = lower + 16;
+        int clampedLower = Math.max(minCenter, Math.min(maxCenter, lower));
+        int clampedUpper = Math.max(minCenter, Math.min(maxCenter, upper));
+        return Math.abs(preferredCenter - clampedLower) <= Math.abs(preferredCenter - clampedUpper) ? clampedLower : clampedUpper;
     }
 
     private static List<Integer> distributeCenters(int min, int max, int radius, int count, BeaconPlanSnapMode snapMode) {
@@ -169,47 +255,35 @@ public final class BeaconPlacementSolver {
         return chunkCenters;
     }
 
-    private static int maxGridCount(int min, int max, int radius) {
-        return Math.max(1, validChunkCenters(min, max, radius).size());
+    private static int maxGridCount(int min, int max, int radius, BeaconPlanSnapMode snapMode) {
+        if (snapMode == BeaconPlanSnapMode.CHUNK_GRID) {
+            return Math.max(1, validChunkCenters(min, max, radius).size());
+        }
+        return Math.max(1, ceilDiv(max - min + 1, radius * 2 + 1) + 2);
     }
 
-    private static double calculateCoverageRatio(BlockArea area, int radius, List<Integer> xCenters, List<Integer> zCenters) {
-        long coveredX = coveredAxisLength(area.minX(), area.maxX(), radius, xCenters);
-        long coveredZ = coveredAxisLength(area.minZ(), area.maxZ(), radius, zCenters);
+    private static double calculateCoverageRatio(BlockArea area, List<BeaconPlacement> placements) {
+        long coveredBlocks = 0L;
+        for (int z = area.minZ(); z <= area.maxZ(); z++) {
+            for (int x = area.minX(); x <= area.maxX(); x++) {
+                if (coverageCount(placements, x, z) > 0) {
+                    coveredBlocks++;
+                }
+            }
+        }
         long totalArea = (long) area.width() * area.height();
-        return totalArea == 0L ? 0.0D : (double) (coveredX * coveredZ) / totalArea;
+        return totalArea == 0L ? 0.0D : (double) coveredBlocks / totalArea;
     }
 
-    private static long coveredAxisLength(int min, int max, int radius, List<Integer> centers) {
-        List<Integer> sortedCenters = centers.stream().sorted().collect(Collectors.toList());
-        long covered = 0L;
-        int currentStart = Integer.MIN_VALUE;
-        int currentEnd = Integer.MIN_VALUE;
-
-        for (int center : sortedCenters) {
-            int intervalStart = Math.max(min, center - radius);
-            int intervalEnd = Math.min(max, center + radius);
-            if (intervalEnd < intervalStart) {
-                continue;
-            }
-            if (currentStart == Integer.MIN_VALUE) {
-                currentStart = intervalStart;
-                currentEnd = intervalEnd;
-                continue;
-            }
-            if (intervalStart > currentEnd + 1) {
-                covered += currentEnd - currentStart + 1L;
-                currentStart = intervalStart;
-                currentEnd = intervalEnd;
-            } else {
-                currentEnd = Math.max(currentEnd, intervalEnd);
+    public static int coverageCount(List<BeaconPlacement> placements, int x, int z) {
+        int count = 0;
+        for (BeaconPlacement placement : placements) {
+            int radius = placement.tier().horizontalRadius();
+            if (x >= placement.x() - radius && x <= placement.x() + radius && z >= placement.z() - radius && z <= placement.z() + radius) {
+                count++;
             }
         }
-
-        if (currentStart != Integer.MIN_VALUE) {
-            covered += currentEnd - currentStart + 1L;
-        }
-        return covered;
+        return count;
     }
 
     private static int ceilDiv(int dividend, int divisor) {

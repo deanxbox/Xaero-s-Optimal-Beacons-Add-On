@@ -94,21 +94,22 @@ public abstract class GuiMapMixin {
             BlockArea selectedArea = selectedArea();
             BeaconTier selectedPlanTier = state.getSelectedPlanTier();
             BeaconPlanSnapMode selectedSnapMode = state.getSelectedPlanSnapMode();
-            BeaconPlacementPlan fullPlan = BeaconPlacementSolver.solve(selectedArea, selectedPlanTier, BeaconPlanPreference.FULL_AREA, selectedSnapMode);
-            BeaconPlacementPlan minPlan = BeaconPlacementSolver.solve(selectedArea, selectedPlanTier, BeaconPlanPreference.MINIMIZE_BEACONS, selectedSnapMode);
+            BeaconPlanPreference selectedPreference = state.getSelectedPlanPreference();
+            BeaconPlacementPlan plannedLayout = BeaconPlacementSolver.solve(selectedArea, selectedPlanTier, selectedPreference, selectedSnapMode);
 
-            options.add(inactiveInfoOption("Planner: Tier " + selectedPlanTier.tier() + " | " + selectedSnapMode.displayName(), nextIndex++, guiMap));
+            options.add(inactiveInfoOption("Planner: " + selectedPreference.displayName() + " | Tier " + selectedPlanTier.tier(), nextIndex++, guiMap));
+            options.add(inactiveInfoOption("Grid: " + selectedSnapMode.displayName(), nextIndex++, guiMap));
+            options.add(new BeaconRightClickOption("Cycle Planning Mode", nextIndex++, guiMap, screen ->
+                state.setSelectedPlanPreference(selectedPreference.next())
+            ));
             options.add(new BeaconRightClickOption("Cycle Planning Tier", nextIndex++, guiMap, screen ->
                 state.setSelectedPlanTier(nextTier(selectedPlanTier))
             ));
             options.add(new BeaconRightClickOption("Toggle Planning Grid", nextIndex++, guiMap, screen ->
                 state.setSelectedPlanSnapMode(nextSnapMode(selectedSnapMode))
             ));
-            options.add(new BeaconRightClickOption(planActionLabel(fullPlan), nextIndex++, guiMap, screen ->
-                state.setPlan(dimension, fullPlan)
-            ));
-            options.add(new BeaconRightClickOption(planActionLabel(minPlan), nextIndex++, guiMap, screen ->
-                state.setPlan(dimension, minPlan)
+            options.add(new BeaconRightClickOption(planActionLabel(plannedLayout), nextIndex++, guiMap, screen ->
+                state.setPlan(dimension, plannedLayout)
             ));
         }
 
@@ -258,22 +259,15 @@ public abstract class GuiMapMixin {
     }
 
     private String planActionLabel(BeaconPlacementPlan plan) {
-        String prefix = plan.preference() == BeaconPlanPreference.FULL_AREA ? "Create Full Coverage Plan" : "Create Min-Beacon Plan";
-        return prefix + " | " + plan.beaconCount() + " beacons | " + coverageText(plan);
+        return "Create " + plan.preference().displayName() + " Plan | " + plan.beaconCount() + " beacons | " + coverageText(plan);
     }
 
     private String togglePlanLabel(BeaconPlacementPlan plan) {
-        BeaconPlanPreference toggledPreference = toggledPreference(plan.preference());
-        String target = toggledPreference == BeaconPlanPreference.FULL_AREA ? "Full Coverage" : "Min-Beacon";
-        return "Switch Plan To " + target;
+        return "Switch Plan To " + plan.preference().next().displayName();
     }
 
     private BeaconPlacementPlan toggledPlan(BeaconPlacementPlan plan) {
-        return BeaconPlacementSolver.solve(plan.targetArea(), plan.tier(), toggledPreference(plan.preference()), plan.snapMode());
-    }
-
-    private BeaconPlanPreference toggledPreference(BeaconPlanPreference preference) {
-        return preference == BeaconPlanPreference.FULL_AREA ? BeaconPlanPreference.MINIMIZE_BEACONS : BeaconPlanPreference.FULL_AREA;
+        return BeaconPlacementSolver.solve(plan.targetArea(), plan.tier(), plan.preference().next(), plan.snapMode());
     }
 
     private String planSummary(BeaconPlacementPlan plan) {

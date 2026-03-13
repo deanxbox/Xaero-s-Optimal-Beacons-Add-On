@@ -1,6 +1,7 @@
 package deanxbox.xaeros_beacon_addon.beacon;
 
 import java.util.List;
+import java.util.Locale;
 
 public record BeaconPlacementPlan(
     BlockArea targetArea,
@@ -45,6 +46,6 @@ public record BeaconPlacementPlan(
     }
 
     public String coveragePercent() {
-        return String.format("%.1f%%", coverageRatio * 100.0D);
+        return String.format(Locale.ROOT, "%.1f%%", coverageRatio * 100.0D);
     }
 }

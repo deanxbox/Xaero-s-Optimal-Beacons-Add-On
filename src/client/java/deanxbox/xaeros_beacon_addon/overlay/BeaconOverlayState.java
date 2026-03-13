@@ -1,5 +1,6 @@
 package deanxbox.xaeros_beacon_addon.overlay;
 
+import deanxbox.xaeros_beacon_addon.beacon.BeaconPlanPreference;
 import deanxbox.xaeros_beacon_addon.beacon.BeaconPlanSnapMode;
 import deanxbox.xaeros_beacon_addon.beacon.BeaconPlacement;
 import deanxbox.xaeros_beacon_addon.beacon.BeaconPlacementPlan;
@@ -21,6 +22,7 @@ public final class BeaconOverlayState {
     private BeaconPlacementPlan plan;
     private BeaconTier selectedPlanTier = BeaconTier.max();
     private BeaconPlanSnapMode selectedPlanSnapMode = BeaconPlanSnapMode.FREE;
+    private BeaconPlanPreference selectedPlanPreference = BeaconPlanPreference.FULL_AREA;
 
     private BeaconOverlayState() {
     }
@@ -71,6 +73,14 @@ public final class BeaconOverlayState {
 
     public synchronized BeaconPlanSnapMode getSelectedPlanSnapMode() {
         return selectedPlanSnapMode;
+    }
+
+    public synchronized void setSelectedPlanPreference(BeaconPlanPreference preference) {
+        selectedPlanPreference = preference;
+    }
+
+    public synchronized BeaconPlanPreference getSelectedPlanPreference() {
+        return selectedPlanPreference;
     }
 
     public synchronized void setPlan(ResourceKey<Level> dimension, BeaconPlacementPlan plan) {
