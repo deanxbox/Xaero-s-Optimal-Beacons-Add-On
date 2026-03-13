@@ -1,0 +1,38 @@
+{
+	"schemaVersion": 1,
+	"id": "xaeros-optimal-beacons-add-on",
+	"version": "${version}",
+	"name": "Xaero's Optimal Beacons Add-On",
+	"description": "This is an example description! Tell everyone what your mod is about!",
+	"authors": [
+		"Me!"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/xaeros-optimal-beacons-add-on/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"deanxbox.xaeros_beacon_addon.XaerosOptimalBeaconsAddOn"
+		],
+		"client": [
+			"deanxbox.xaeros_beacon_addon.XaerosOptimalBeaconsAddOnClient"
+		]
+	},
+	"mixins": [
+		"xaeros-optimal-beacons-add-on.mixins.json",
+		{
+			"config": "xaeros-optimal-beacons-add-on.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
