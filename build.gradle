@@ -35,10 +35,15 @@ dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	mappings loom.officialMojangMappings()
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
-	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-	
+
+	modCompileOnly files("libs/xaeroworldmap-fabric-1.21.11-1.40.11.jar")
+	modRuntimeOnly files("libs/xaeroworldmap-fabric-1.21.11-1.40.11.jar")
+	modCompileOnly files("libs/xaerolib-fabric-1.21.11-1.1.0.jar")
+	modRuntimeOnly files("libs/xaerolib-fabric-1.21.11-1.1.0.jar")
+    modCompileOnly files("libs/xaerominimap-fabric-1.21.11-25.3.10.jar")
+    modRuntimeOnly files("libs/xaerominimap-fabric-1.21.11-25.3.10.jar")
+
 }
 
 processResources {

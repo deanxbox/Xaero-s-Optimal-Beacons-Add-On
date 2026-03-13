@@ -3,27 +3,20 @@
 	"id": "xaeros-optimal-beacons-add-on",
 	"version": "${version}",
 	"name": "Xaero's Optimal Beacons Add-On",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"description": "Beacon planning tools for Xaero's World Map.",
 	"authors": [
-		"Me!"
+		"deanxbox"
 	],
-	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
-	},
+	"contact": {},
 	"license": "CC0-1.0",
 	"icon": "assets/xaeros-optimal-beacons-add-on/icon.png",
-	"environment": "*",
+	"environment": "client",
 	"entrypoints": {
-		"main": [
-			"deanxbox.xaeros_beacon_addon.XaerosOptimalBeaconsAddOn"
-		],
 		"client": [
 			"deanxbox.xaeros_beacon_addon.XaerosOptimalBeaconsAddOnClient"
 		]
 	},
 	"mixins": [
-		"xaeros-optimal-beacons-add-on.mixins.json",
 		{
 			"config": "xaeros-optimal-beacons-add-on.client.mixins.json",
 			"environment": "client"

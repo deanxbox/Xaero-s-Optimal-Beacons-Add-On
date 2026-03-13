@@ -3,7 +3,8 @@
 	"package": "deanxbox.xaeros_beacon_addon.mixin.client",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
-		"ExampleClientMixin"
+		"GuiMapMixin",
+		"HighlighterRegistryMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
