@@ -139,4 +139,5 @@ If Mod Menu is installed, you can configure:
 
 ## License
 
-`CC0-1.0`
+`MIT`
+

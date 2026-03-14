@@ -8,7 +8,7 @@
 		"deanxbox"
 	],
 	"contact": {},
-	"license": "CC0-1.0",
+	"license": "MIT",
 	"icon": "assets/xaeros-optimal-beacons-add-on/icon.png",
 	"environment": "client",
 	"entrypoints": {
@@ -38,3 +38,4 @@
 		"xaerominimap": ">=25.3.10"
 	}
 }
+
