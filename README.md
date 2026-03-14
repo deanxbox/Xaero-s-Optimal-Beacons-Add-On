@@ -49,19 +49,19 @@ Replace the placeholder image paths below with your real screenshots before rele
 
 ### Beacon Preview
 
-![Beacon preview screenshot placeholder](./screenshots/placeholder-beacon-preview.png)
+![Beacon preview screenshot placeholder](https://cdn.modrinth.com/data/3pNfuOS8/images/0eedce8fe164dd53707ed0d5c8595bd42bcef0e7.png)
 
 ### Placement Plan
 
-![Placement plan screenshot placeholder](./screenshots/placeholder-plan-overview.png)
+![Placement plan screenshot placeholder](https://cdn.modrinth.com/data/3pNfuOS8/images/e93c6b2ae4e3ae95fcc426af4b3960cde4de0cba.png)
 
 ### Heatmap And Gap Controls
 
-![Heatmap screenshot placeholder](./screenshots/placeholder-heatmap.png)
+![Heatmap screenshot placeholder](https://cdn.modrinth.com/data/3pNfuOS8/images/aa4014b40c280611df700aecd54a9f0f15b5b9a0.png)
 
 ### Mod Menu Configuration
 
-![Configuration screenshot placeholder](./screenshots/placeholder-config.png)
+![Configuration screenshot placeholder](https://cdn.modrinth.com/data/3pNfuOS8/images/5f98ef51371da9a74f0c66dbffdd6a31525bb414.png)
 
 ## Requirements
 
