@@ -8,11 +8,13 @@ import deanxbox.xaeros_beacon_addon.beacon.BeaconPlacementPlan;
 import deanxbox.xaeros_beacon_addon.beacon.BeaconPlacementSolver;
 import deanxbox.xaeros_beacon_addon.beacon.BeaconTier;
 import deanxbox.xaeros_beacon_addon.beacon.BlockArea;
+import deanxbox.xaeros_beacon_addon.beacon.GapDirection;
+import deanxbox.xaeros_beacon_addon.config.BeaconClientConfig;
 import deanxbox.xaeros_beacon_addon.menu.BeaconRightClickOption;
-import deanxbox.xaeros_beacon_addon.overlay.BeaconMinimapSync;
 import deanxbox.xaeros_beacon_addon.overlay.BeaconOverlay;
 import deanxbox.xaeros_beacon_addon.overlay.BeaconOverlaySource;
 import deanxbox.xaeros_beacon_addon.overlay.BeaconOverlayState;
+import deanxbox.xaeros_beacon_addon.overlay.MinimapCompat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -34,7 +36,7 @@ import xaero.map.gui.dropdown.rightclick.RightClickOption;
 
 @Mixin(GuiMap.class)
 public abstract class GuiMapMixin {
-    private static final double MIN_LABEL_PIXELS_PER_BLOCK = 0.75D;
+    private static final double MIN_LABEL_PIXELS_PER_BLOCK = 0.5D;
 
     @Shadow
     private int rightClickX;
@@ -73,7 +75,7 @@ public abstract class GuiMapMixin {
         int nextIndex = options.size();
 
         options.add(new BeaconRightClickOption("Place Beacon", nextIndex++, guiMap, screen ->
-            state.placeManualBeacon(dimension, rightClickX, rightClickZ, BeaconTier.max())
+            state.placeManualBeacon(dimension, rightClickX, rightClickZ, state.getDefaultManualTier())
         ));
 
         BeaconOverlay clickedOverlay = state.findOverlayAt(dimension, rightClickX, rightClickZ);
@@ -97,20 +99,33 @@ public abstract class GuiMapMixin {
             BeaconPlanPreference selectedPreference = state.getSelectedPlanPreference();
             BeaconPlacementPlan plannedLayout = BeaconPlacementSolver.solve(selectedArea, selectedPlanTier, selectedPreference, selectedSnapMode);
 
-            options.add(inactiveInfoOption("Planner: " + selectedPreference.displayName() + " | Tier " + selectedPlanTier.tier(), nextIndex++, guiMap));
-            options.add(inactiveInfoOption("Grid: " + selectedSnapMode.displayName(), nextIndex++, guiMap));
-            options.add(new BeaconRightClickOption("Cycle Planning Mode", nextIndex++, guiMap, screen ->
-                state.setSelectedPlanPreference(selectedPreference.next())
-            ));
-            options.add(new BeaconRightClickOption("Cycle Planning Tier", nextIndex++, guiMap, screen ->
-                state.setSelectedPlanTier(nextTier(selectedPlanTier))
+            options.add(inactiveInfoOption("Plan: T" + selectedPlanTier.tier() + " | " + shortSnapMode(selectedSnapMode) + " | " + shortPreference(selectedPreference), nextIndex++, guiMap));
+            if (selectedPlanTier != BeaconTier.max()) {
+                BeaconPlacementPlan maxTierPlan = BeaconPlacementSolver.solve(selectedArea, BeaconTier.max(), selectedPreference, selectedSnapMode);
+                options.add(inactiveInfoOption("Max tier would use " + maxTierPlan.beaconCount() + " beacons", nextIndex++, guiMap));
+                options.add(new BeaconRightClickOption("Use Max Tier", nextIndex++, guiMap, screen ->
+                    updatePlanningTier(state, BeaconTier.max())
+                ));
+            }
+            for (BeaconPlanPreference preference : BeaconPlanPreference.values()) {
+                if (preference == selectedPreference) {
+                    continue;
+                }
+                BeaconPlanPreference preferenceChoice = preference;
+                options.add(new BeaconRightClickOption("Use " + shortPreference(preference), nextIndex++, guiMap, screen ->
+                    state.setSelectedPlanPreference(preferenceChoice)
+                ));
+            }
+            options.add(new BeaconRightClickOption("Cycle Planning Tier (T" + selectedPlanTier.tier() + ")", nextIndex++, guiMap, screen ->
+                updatePlanningTier(state, nextTier(selectedPlanTier))
             ));
             options.add(new BeaconRightClickOption("Toggle Planning Grid", nextIndex++, guiMap, screen ->
                 state.setSelectedPlanSnapMode(nextSnapMode(selectedSnapMode))
             ));
-            options.add(new BeaconRightClickOption(planActionLabel(plannedLayout), nextIndex++, guiMap, screen ->
+            options.add(new BeaconRightClickOption("Create Plan (T" + selectedPlanTier.tier() + ")", nextIndex++, guiMap, screen ->
                 state.setPlan(dimension, plannedLayout)
             ));
+            options.add(inactiveInfoOption(shortPlanMetrics(plannedLayout), nextIndex++, guiMap));
         }
 
         BeaconPlacementPlan currentPlan = state.getPlan(dimension);
@@ -118,13 +133,23 @@ public abstract class GuiMapMixin {
             options.add(new BeaconRightClickOption(togglePlanLabel(currentPlan), nextIndex++, guiMap, screen ->
                 state.setPlan(dimension, toggledPlan(currentPlan))
             ));
-            options.add(new BeaconRightClickOption("Set Temporary Waypoints For Plan", nextIndex++, guiMap, screen ->
-                BeaconMinimapSync.createPlanTemporaryWaypoints()
-            ));
+            if (state.canAdjustPlanGaps(dimension)) {
+                for (GapDirection direction : GapDirection.values()) {
+                    GapDirection selectedDirection = direction;
+                    options.add(new BeaconRightClickOption(direction.menuLabel(), nextIndex++, guiMap, screen ->
+                        state.setPlan(dimension, BeaconPlacementSolver.prioritizeGapDirection(currentPlan, selectedDirection))
+                    ));
+                }
+            }
+            if (MinimapCompat.isAvailable()) {
+                options.add(new BeaconRightClickOption("Set Temporary Waypoints", nextIndex++, guiMap, screen ->
+                    MinimapCompat.createPlanTemporaryWaypoints()
+                ));
+            }
             options.add(new BeaconRightClickOption("Copy Plan Coordinates", nextIndex++, guiMap, screen ->
                 copyPlanToClipboard(currentPlan)
             ));
-            options.add(new BeaconRightClickOption("Send Plan Coordinates To Chat", nextIndex++, guiMap, screen ->
+            options.add(new BeaconRightClickOption("Send Plan To Chat", nextIndex++, guiMap, screen ->
                 sendPlanToChat(currentPlan)
             ));
             options.add(inactiveInfoOption(planSummary(currentPlan), nextIndex++, guiMap));
@@ -157,26 +182,26 @@ public abstract class GuiMapMixin {
         }
 
         renderPlanStatsPanel(guiGraphics, plan);
-        renderPlanLabels(guiGraphics, plan);
     }
 
     private void renderPlanStatsPanel(GuiGraphics guiGraphics, BeaconPlacementPlan plan) {
         Minecraft minecraft = Minecraft.getInstance();
         Font font = minecraft.font;
+        BeaconOverlayState state = BeaconOverlayState.getInstance();
         List<String> lines = new ArrayList<>();
         lines.add("Beacon Plan");
         lines.add(plan.preference().displayName() + " | " + plan.snapMode().displayName());
         lines.add("Tier " + plan.tier().tier() + " | Coverage " + coverageText(plan));
         lines.add(plan.beaconCount() + " beacons | " + plan.totalPyramidBlocks() + " blocks");
         lines.add(plan.stackBreakdown());
-
-        List<String> placementLines = BeaconPlanExport.numberedPlacementLines(plan);
-        int visiblePlacements = Math.min(placementLines.size(), 6);
-        for (int index = 0; index < visiblePlacements; index++) {
-            lines.add(placementLines.get(index));
+        if (state.canAdjustPlanGaps(lastViewedDimensionId)) {
+            lines.add("Right-click plan to move gaps");
         }
-        if (placementLines.size() > visiblePlacements) {
-            lines.add("+" + (placementLines.size() - visiblePlacements) + " more placements");
+
+        List<String> placementLines = BeaconPlanExport.numberedPlacementLines(plan, 6);
+        lines.addAll(placementLines);
+        if (plan.beaconCount() > placementLines.size()) {
+            lines.add("+" + (plan.beaconCount() - placementLines.size()) + " more placements");
         }
 
         int width = 0;
@@ -200,37 +225,6 @@ public abstract class GuiMapMixin {
             int color = index == 0 ? 0xFFF7FBFF : 0xFFDCE7EF;
             guiGraphics.drawString(font, lines.get(index), x + 6, lineY, color, false);
             lineY += lineHeight;
-        }
-    }
-
-    private void renderPlanLabels(GuiGraphics guiGraphics, BeaconPlacementPlan plan) {
-        if (scale <= 0.0D || 1.0D / scale < MIN_LABEL_PIXELS_PER_BLOCK) {
-            return;
-        }
-
-        Minecraft minecraft = Minecraft.getInstance();
-        Font font = minecraft.font;
-        int screenWidth = minecraft.getWindow().getGuiScaledWidth();
-        int screenHeight = minecraft.getWindow().getGuiScaledHeight();
-        List<BeaconPlacement> placements = BeaconPlanExport.sortedPlacements(plan);
-
-        for (int index = 0; index < placements.size(); index++) {
-            BeaconPlacement placement = placements.get(index);
-            String label = Integer.toString(index + 1);
-            int labelWidth = font.width(label);
-            int centerX = (int) Math.round(screenWidth / 2.0D + (placement.x() - cameraX) / scale);
-            int centerY = (int) Math.round(screenHeight / 2.0D + (placement.z() - cameraZ) / scale);
-            int boxLeft = centerX + 6;
-            int boxTop = centerY - 6;
-            int boxRight = boxLeft + labelWidth + 4;
-            int boxBottom = boxTop + 9;
-
-            if (boxRight < 0 || boxLeft > screenWidth || boxBottom < 0 || boxTop > screenHeight) {
-                continue;
-            }
-
-            guiGraphics.fill(boxLeft, boxTop, boxRight, boxBottom, 0xC814171B);
-            guiGraphics.drawString(font, label, boxLeft + 2, boxTop + 1, 0xFFFFF4C2, false);
         }
     }
 
@@ -258,12 +252,24 @@ public abstract class GuiMapMixin {
         }
     }
 
-    private String planActionLabel(BeaconPlacementPlan plan) {
-        return "Create " + plan.preference().displayName() + " Plan | " + plan.beaconCount() + " beacons | " + coverageText(plan);
+    private String shortPreference(BeaconPlanPreference preference) {
+        return switch (preference) {
+            case FULL_AREA -> "Full Coverage";
+            case MINIMIZE_BEACONS -> "Minimize Beacons";
+            case HEX_OPTIMAL -> "Hex-Optimal";
+        };
+    }
+
+    private String shortSnapMode(BeaconPlanSnapMode snapMode) {
+        return snapMode == BeaconPlanSnapMode.FREE ? "Free" : "Chunk";
+    }
+
+    private String shortPlanMetrics(BeaconPlacementPlan plan) {
+        return plan.beaconCount() + " beacons | " + safeCoverageText(plan);
     }
 
     private String togglePlanLabel(BeaconPlacementPlan plan) {
-        return "Switch Plan To " + plan.preference().next().displayName();
+        return "Switch To " + shortPreference(plan.preference().next());
     }
 
     private BeaconPlacementPlan toggledPlan(BeaconPlacementPlan plan) {
@@ -271,20 +277,36 @@ public abstract class GuiMapMixin {
     }
 
     private String planSummary(BeaconPlacementPlan plan) {
-        return plan.preference().displayName() + " | " + plan.snapMode().displayName() + " | " + plan.beaconCount() + " beacons";
+        return shortPreference(plan.preference()) + " | " + shortSnapMode(plan.snapMode()) + " | " + plan.beaconCount() + " beacons";
     }
 
     private String blockSummary(BeaconPlacementPlan plan) {
-        return coverageText(plan) + " coverage | " + plan.totalPyramidBlocks() + " beacon blocks | " + plan.stackBreakdown();
+        return safeCoverageText(plan) + " coverage | " + plan.stackBreakdown();
     }
 
     private String coverageText(BeaconPlacementPlan plan) {
+        return String.format(Locale.ROOT, "%.1f%%", plan.coverageRatio() * 100.0D);
+    }
+
+    private String safeCoverageText(BeaconPlacementPlan plan) {
         return String.format(Locale.ROOT, "%.1f pct", plan.coverageRatio() * 100.0D);
     }
 
+    private void updatePlanningTier(BeaconOverlayState state, BeaconTier tier) {
+        state.setSelectedPlanTier(tier);
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player != null) {
+            minecraft.player.displayClientMessage(Component.literal("Planning tier set to T" + tier.tier() + "."), false);
+        }
+    }
+
     private BeaconTier nextTier(BeaconTier currentTier) {
-        BeaconTier[] tiers = BeaconTier.values();
-        return tiers[(currentTier.ordinal() + 1) % tiers.length];
+        return switch (currentTier) {
+            case FOUR -> BeaconTier.THREE;
+            case THREE -> BeaconTier.TWO;
+            case TWO -> BeaconTier.ONE;
+            case ONE -> BeaconTier.FOUR;
+        };
     }
 
     private BeaconPlanSnapMode nextSnapMode(BeaconPlanSnapMode currentMode) {
@@ -305,3 +327,5 @@ public abstract class GuiMapMixin {
         return new BlockArea(minX, minZ, maxX, maxZ);
     }
 }
+
+

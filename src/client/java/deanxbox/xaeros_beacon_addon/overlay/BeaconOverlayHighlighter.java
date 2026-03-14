@@ -1,8 +1,8 @@
 package deanxbox.xaeros_beacon_addon.overlay;
 
-import deanxbox.xaeros_beacon_addon.beacon.BeaconPlacement;
 import deanxbox.xaeros_beacon_addon.beacon.BeaconPlacementPlan;
 import deanxbox.xaeros_beacon_addon.beacon.BeaconPlacementSolver;
+import deanxbox.xaeros_beacon_addon.config.BeaconClientConfig;
 import java.util.Arrays;
 import java.util.List;
 import net.minecraft.network.chat.Component;
@@ -12,21 +12,6 @@ import xaero.map.highlight.AbstractHighlighter;
 
 public class BeaconOverlayHighlighter extends AbstractHighlighter {
     public static final BeaconOverlayHighlighter INSTANCE = new BeaconOverlayHighlighter();
-
-    private static final int MANUAL_FILL = rgba(244, 197, 66, 24);
-    private static final int MANUAL_INNER_BORDER = rgba(255, 223, 115, 96);
-    private static final int MANUAL_BORDER = rgba(255, 239, 181, 178);
-    private static final int MANUAL_RING = rgba(36, 45, 58, 245);
-    private static final int MANUAL_CORE = rgba(255, 88, 51, 255);
-    private static final int PLAN_SINGLE = rgba(63, 168, 214, 18);
-    private static final int PLAN_OVERLAP_TWO = rgba(255, 174, 66, 70);
-    private static final int PLAN_OVERLAP_THREE = rgba(255, 112, 67, 110);
-    private static final int PLAN_OVERLAP_HEAVY = rgba(220, 53, 69, 150);
-    private static final int PLAN_HOLE = rgba(255, 34, 34, 110);
-    private static final int PLAN_INNER_BORDER = rgba(122, 201, 235, 78);
-    private static final int PLAN_BORDER = rgba(196, 238, 250, 160);
-    private static final int PLAN_RING = rgba(26, 34, 46, 245);
-    private static final int PLAN_CORE = rgba(255, 40, 40, 255);
 
     private BeaconOverlayHighlighter() {
         super(true);
@@ -64,7 +49,7 @@ public class BeaconOverlayHighlighter extends AbstractHighlighter {
     @Override
     public boolean chunkIsHighlit(ResourceKey<Level> dimension, int chunkX, int chunkZ) {
         BeaconPlacementPlan plan = BeaconOverlayState.getInstance().getPlan(dimension);
-        if (plan != null && plan.targetArea().intersectsChunk(chunkX, chunkZ)) {
+        if (plan != null && BeaconClientConfig.get().ui.showHeatmap && plan.targetArea().intersectsChunk(chunkX, chunkZ)) {
             return true;
         }
         for (BeaconOverlay overlay : BeaconOverlayState.getInstance().getOverlays(dimension)) {
@@ -77,6 +62,7 @@ public class BeaconOverlayHighlighter extends AbstractHighlighter {
 
     @Override
     public int[] getChunkHighlitColor(ResourceKey<Level> dimension, int chunkX, int chunkZ) {
+        BeaconClientConfig.OverlayColors colors = BeaconClientConfig.get().colors;
         Arrays.fill(resultStore, 0);
         int originX = chunkX << 4;
         int originZ = chunkZ << 4;
@@ -84,7 +70,7 @@ public class BeaconOverlayHighlighter extends AbstractHighlighter {
         BeaconPlacementPlan plan = BeaconOverlayState.getInstance().getPlan(dimension);
         List<BeaconOverlay> overlays = BeaconOverlayState.getInstance().getOverlays(dimension);
 
-        if (plan != null && plan.targetArea().intersectsChunk(chunkX, chunkZ)) {
+        if (plan != null && BeaconClientConfig.get().ui.showHeatmap && plan.targetArea().intersectsChunk(chunkX, chunkZ)) {
             found = true;
             for (int localZ = 0; localZ < 16; localZ++) {
                 int worldZ = originZ + localZ;
@@ -95,7 +81,7 @@ public class BeaconOverlayHighlighter extends AbstractHighlighter {
                     }
                     int index = (localZ << 4) | localX;
                     int overlap = BeaconPlacementSolver.coverageCount(plan.placements(), worldX, worldZ);
-                    resultStore[index] = overlapColor(overlap);
+                    resultStore[index] = overlapColor(colors, overlap);
                 }
             }
         }
@@ -112,7 +98,7 @@ public class BeaconOverlayHighlighter extends AbstractHighlighter {
                     if (!overlay.containsBlock(worldX, worldZ)) {
                         continue;
                     }
-                    int color = colorFor(overlay, worldX, worldZ);
+                    int color = colorFor(colors, overlay, worldX, worldZ);
                     if (color == 0) {
                         continue;
                     }
@@ -176,52 +162,53 @@ public class BeaconOverlayHighlighter extends AbstractHighlighter {
         return null;
     }
 
-    private static int colorFor(BeaconOverlay overlay, int worldX, int worldZ) {
+    private static int colorFor(BeaconClientConfig.OverlayColors colors, BeaconOverlay overlay, int worldX, int worldZ) {
+        if (overlay.isPreviewTop(worldX, worldZ) || overlay.isPreviewBase(worldX, worldZ)) {
+            return ringColor(colors, overlay);
+        }
+        if (overlay.isPreviewPillar(worldX, worldZ)) {
+            return coreColor(colors, overlay);
+        }
         if (overlay.isCenterMarkerCore(worldX, worldZ)) {
-            return coreColor(overlay);
+            return coreColor(colors, overlay);
         }
         if (overlay.isCenterMarkerInnerRing(worldX, worldZ)) {
-            return ringColor(overlay);
+            return ringColor(colors, overlay);
         }
         if (overlay.isCenterMarkerOuterRing(worldX, worldZ)) {
-            return ringColor(overlay);
+            return ringColor(colors, overlay);
         }
         if (overlay.isBorderBlock(worldX, worldZ)) {
-            return borderColor(overlay);
+            return borderColor(colors, overlay);
         }
         if (overlay.isInnerBorderBlock(worldX, worldZ)) {
-            return innerBorderColor(overlay);
+            return innerBorderColor(colors, overlay);
         }
-        return overlay.source() == BeaconOverlaySource.MANUAL ? MANUAL_FILL : 0;
+        return overlay.source() == BeaconOverlaySource.MANUAL ? colors.manualFill : 0;
     }
 
-    private static int overlapColor(int overlap) {
+    private static int overlapColor(BeaconClientConfig.OverlayColors colors, int overlap) {
         return switch (overlap) {
-            case 0 -> PLAN_HOLE;
-            case 1 -> PLAN_SINGLE;
-            case 2 -> PLAN_OVERLAP_TWO;
-            case 3 -> PLAN_OVERLAP_THREE;
-            default -> PLAN_OVERLAP_HEAVY;
+            case 0 -> colors.planUncovered;
+            case 1 -> colors.planCovered;
+            case 2 -> colors.planOverlap;
+            default -> colors.planHeavyOverlap;
         };
     }
 
-    private static int innerBorderColor(BeaconOverlay overlay) {
-        return overlay.source() == BeaconOverlaySource.MANUAL ? MANUAL_INNER_BORDER : PLAN_INNER_BORDER;
+    private static int innerBorderColor(BeaconClientConfig.OverlayColors colors, BeaconOverlay overlay) {
+        return overlay.source() == BeaconOverlaySource.MANUAL ? colors.manualInnerBorder : colors.planInnerBorder;
     }
 
-    private static int borderColor(BeaconOverlay overlay) {
-        return overlay.source() == BeaconOverlaySource.MANUAL ? MANUAL_BORDER : PLAN_BORDER;
+    private static int borderColor(BeaconClientConfig.OverlayColors colors, BeaconOverlay overlay) {
+        return overlay.source() == BeaconOverlaySource.MANUAL ? colors.manualBorder : colors.planBorder;
     }
 
-    private static int ringColor(BeaconOverlay overlay) {
-        return overlay.source() == BeaconOverlaySource.MANUAL ? MANUAL_RING : PLAN_RING;
+    private static int ringColor(BeaconClientConfig.OverlayColors colors, BeaconOverlay overlay) {
+        return overlay.source() == BeaconOverlaySource.MANUAL ? colors.manualRing : colors.planRing;
     }
 
-    private static int coreColor(BeaconOverlay overlay) {
-        return overlay.source() == BeaconOverlaySource.MANUAL ? MANUAL_CORE : PLAN_CORE;
-    }
-
-    private static int rgba(int red, int green, int blue, int alpha) {
-        return (red << 24) | (green << 16) | (blue << 8) | alpha;
+    private static int coreColor(BeaconClientConfig.OverlayColors colors, BeaconOverlay overlay) {
+        return overlay.source() == BeaconOverlaySource.MANUAL ? colors.manualCore : colors.planCore;
     }
 }

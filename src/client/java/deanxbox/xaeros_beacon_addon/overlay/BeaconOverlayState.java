@@ -1,10 +1,11 @@
 package deanxbox.xaeros_beacon_addon.overlay;
 
-import deanxbox.xaeros_beacon_addon.beacon.BeaconPlanPreference;
-import deanxbox.xaeros_beacon_addon.beacon.BeaconPlanSnapMode;
 import deanxbox.xaeros_beacon_addon.beacon.BeaconPlacement;
 import deanxbox.xaeros_beacon_addon.beacon.BeaconPlacementPlan;
+import deanxbox.xaeros_beacon_addon.beacon.BeaconPlanPreference;
+import deanxbox.xaeros_beacon_addon.beacon.BeaconPlanSnapMode;
 import deanxbox.xaeros_beacon_addon.beacon.BeaconTier;
+import deanxbox.xaeros_beacon_addon.config.BeaconClientConfig;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -18,17 +19,31 @@ public final class BeaconOverlayState {
 
     private final List<BeaconOverlay> manualBeacons = new ArrayList<>();
     private final List<BeaconOverlay> plannedBeacons = new ArrayList<>();
+    private final BeaconClientConfig config;
     private ResourceKey<Level> planDimension;
     private BeaconPlacementPlan plan;
-    private BeaconTier selectedPlanTier = BeaconTier.max();
-    private BeaconPlanSnapMode selectedPlanSnapMode = BeaconPlanSnapMode.FREE;
-    private BeaconPlanPreference selectedPlanPreference = BeaconPlanPreference.FULL_AREA;
+    private BeaconTier selectedPlanTier;
+    private BeaconPlanSnapMode selectedPlanSnapMode;
+    private BeaconPlanPreference selectedPlanPreference;
 
     private BeaconOverlayState() {
+        this.config = BeaconClientConfig.get();
+        this.selectedPlanTier = config.planner.selectedTier;
+        this.selectedPlanSnapMode = config.planner.selectedSnapMode;
+        this.selectedPlanPreference = config.planner.selectedPreference;
     }
 
     public static BeaconOverlayState getInstance() {
         return INSTANCE;
+    }
+
+    public synchronized BeaconTier getDefaultManualTier() {
+        return config.planner.defaultManualTier;
+    }
+
+    public synchronized void setDefaultManualTier(BeaconTier tier) {
+        config.planner.defaultManualTier = tier;
+        config.save();
     }
 
     public synchronized BeaconOverlay placeManualBeacon(ResourceKey<Level> dimension, int x, int z, BeaconTier tier) {
@@ -61,6 +76,8 @@ public final class BeaconOverlayState {
 
     public synchronized void setSelectedPlanTier(BeaconTier tier) {
         selectedPlanTier = tier;
+        config.planner.selectedTier = tier;
+        config.save();
     }
 
     public synchronized BeaconTier getSelectedPlanTier() {
@@ -69,6 +86,8 @@ public final class BeaconOverlayState {
 
     public synchronized void setSelectedPlanSnapMode(BeaconPlanSnapMode snapMode) {
         selectedPlanSnapMode = snapMode;
+        config.planner.selectedSnapMode = snapMode;
+        config.save();
     }
 
     public synchronized BeaconPlanSnapMode getSelectedPlanSnapMode() {
@@ -77,6 +96,8 @@ public final class BeaconOverlayState {
 
     public synchronized void setSelectedPlanPreference(BeaconPlanPreference preference) {
         selectedPlanPreference = preference;
+        config.planner.selectedPreference = preference;
+        config.save();
     }
 
     public synchronized BeaconPlanPreference getSelectedPlanPreference() {
@@ -84,19 +105,16 @@ public final class BeaconOverlayState {
     }
 
     public synchronized void setPlan(ResourceKey<Level> dimension, BeaconPlacementPlan plan) {
-        BeaconMinimapSync.clearGeneratedPlanWaypoints();
+        MinimapCompat.clearGeneratedPlanWaypoints();
         this.planDimension = dimension;
         this.plan = plan;
-        plannedBeacons.clear();
-        for (BeaconPlacement placement : plan.placements()) {
-            plannedBeacons.add(new BeaconOverlay(dimension, placement.x(), placement.z(), placement.tier(), BeaconOverlaySource.PLAN));
-        }
+        rebuildPlannedBeacons(dimension, plan);
         onStateChanged();
     }
 
     public synchronized void clearPlan() {
         if (!plannedBeacons.isEmpty() || plan != null) {
-            BeaconMinimapSync.clearGeneratedPlanWaypoints();
+            MinimapCompat.clearGeneratedPlanWaypoints();
             plannedBeacons.clear();
             plan = null;
             planDimension = null;
@@ -146,6 +164,14 @@ public final class BeaconOverlayState {
             .orElse(null);
     }
 
+    public synchronized boolean canAdjustPlanGaps(ResourceKey<Level> dimension) {
+        return config.ui.enableDirectionalGapAdjustment
+            && hasPlan(dimension)
+            && plan != null
+            && plan.preference() != BeaconPlanPreference.FULL_AREA
+            && plan.coverageRatio() < 0.9999D;
+    }
+
     public synchronized void invalidateHighlights() {
         WorldMapSession session = WorldMapSession.getCurrentSession();
         if (session == null || !session.isUsable()) {
@@ -160,6 +186,13 @@ public final class BeaconOverlayState {
 
     private void onStateChanged() {
         invalidateHighlights();
-        BeaconMinimapSync.syncCurrentWorld();
+        MinimapCompat.syncCurrentWorld();
+    }
+
+    private void rebuildPlannedBeacons(ResourceKey<Level> dimension, BeaconPlacementPlan plan) {
+        plannedBeacons.clear();
+        for (BeaconPlacement placement : plan.placements()) {
+            plannedBeacons.add(new BeaconOverlay(dimension, placement.x(), placement.z(), placement.tier(), BeaconOverlaySource.PLAN));
+        }
     }
 }

@@ -67,6 +67,24 @@ public record BeaconOverlay(ResourceKey<Level> dimension, int x, int z, BeaconTi
         return Math.max(dx, dz) == 3 && (dx == 0 || dz == 0 || dx == dz);
     }
 
+    public boolean isPreviewPillar(int blockX, int blockZ) {
+        int dx = Math.abs(blockX - x);
+        int dz = Math.abs(blockZ - z);
+        return dx <= 1 && dz <= 4;
+    }
+
+    public boolean isPreviewTop(int blockX, int blockZ) {
+        int dx = Math.abs(blockX - x);
+        int dz = blockZ - z;
+        return dz >= -6 && dz <= -4 && dx <= 2 - Math.max(0, -5 - dz);
+    }
+
+    public boolean isPreviewBase(int blockX, int blockZ) {
+        int dx = Math.abs(blockX - x);
+        int dz = blockZ - z;
+        return dz >= 2 && dz <= 4 && dx <= 3 - (dz - 2);
+    }
+
     private int distanceToBorder(int blockX, int blockZ) {
         int distanceX = Math.min(blockX - minX(), maxX() - blockX);
         int distanceZ = Math.min(blockZ - minZ(), maxZ() - blockZ);

@@ -14,7 +14,10 @@
 	"entrypoints": {
 		"client": [
 			"deanxbox.xaeros_beacon_addon.XaerosOptimalBeaconsAddOnClient"
-		]
+		],
+        "modmenu": [
+            "deanxbox.xaeros_beacon_addon.integration.BeaconModMenuApi"
+        ]
 	},
 	"mixins": [
 		{
@@ -27,7 +30,11 @@
 		"minecraft": "~1.21.11",
 		"java": ">=21",
 		"fabric-api": "*",
-		"xaeroworldmap": ">=1.40.11",
+		"cloth-config": ">=21.11.153",
+		"xaeroworldmap": ">=1.40.11"
+	},
+	"suggests": {
+		"modmenu": ">=15.0.0-beta.3",
 		"xaerominimap": ">=25.3.10"
 	}
 }

@@ -134,7 +134,7 @@ public final class BeaconMinimapSync {
     }
 
     private static int uniqueId(BeaconOverlay overlay) {
-        return 31 * overlay.source().ordinal() + 31 * overlay.x() + overlay.z();
+        return java.util.Objects.hash(overlay.source(), overlay.x(), overlay.z());
     }
 
     private static String nameFor(BeaconOverlay overlay, int index) {

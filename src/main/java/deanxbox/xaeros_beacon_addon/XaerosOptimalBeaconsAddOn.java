@@ -19,6 +19,6 @@ public class XaerosOptimalBeaconsAddOn implements ModInitializer {
 		// However, some things (like resources) may still be uninitialized.
 		// Proceed with mild caution.
 
-		LOGGER.info("Hello Fabric world!");
+		LOGGER.info("Xaero's Optimal Beacons Add-On initialized.");
 	}
 }
