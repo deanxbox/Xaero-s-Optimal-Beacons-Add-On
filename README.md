@@ -6,7 +6,7 @@ Beacon planning tools for Xaero's World Map on Fabric.
 
 ## Version
 
-Current release: `v1.0.0`
+Current release: `v1.1.0`
 
 ## Features
 
@@ -40,6 +40,7 @@ Current release: `v1.0.0`
 - Send plan coordinates to chat.
 - Create temporary Xaero Minimap waypoints for planned beacon locations when Xaero Minimap is installed.
 - Automatically clear generated plan waypoints when a plan is replaced or removed.
+- Throttle automatic minimap waypoint syncing so unchanged plans do not rebuild waypoints every client tick.
 - Persist planner defaults and overlay color settings in config.
 - Configure defaults and colors through Mod Menu / Cloth Config.
 
@@ -65,20 +66,21 @@ Replace the placeholder image paths below with your real screenshots before rele
 
 ## Requirements
 
-- Minecraft `1.21.11`
-- Fabric Loader `0.18.4+`
-- Fabric API
-- Xaero's World Map `1.40.11+`
-- Java `21+`
+- Minecraft `26.1.2`
+- Fabric Loader `0.19.2+`
+- Fabric API `0.149.0+26.1.2+`
+- Xaero's World Map `1.40.18+`
+- Cloth Config `26.1.154+`
+- Java `25+`
 
 Optional:
 
-- Xaero's Minimap `25.3.10+`
-- Mod Menu `15.0.0-beta.3+`
+- Xaero's Minimap `25.3.14+`
+- Mod Menu `18.0.0-beta.1+`
 
 ## Installation
 
-1. Install Fabric Loader for Minecraft `1.21.11`.
+1. Install Fabric Loader for Minecraft `26.1.2`.
 2. Install Fabric API.
 3. Install Xaero's World Map.
 4. Drop `Xaero's Optimal Beacons Add-On` into your `mods` folder.

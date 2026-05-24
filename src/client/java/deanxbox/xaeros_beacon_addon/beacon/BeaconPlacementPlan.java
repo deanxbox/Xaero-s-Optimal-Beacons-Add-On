@@ -39,10 +39,14 @@ public record BeaconPlacementPlan(
     public String stackBreakdown() {
         int fullStacks = fullStacks();
         int remainder = remainingBlocks();
-        if (remainder == 0) {
-            return fullStacks + " stacks";
+        if (fullStacks == 0) {
+            return remainder + (remainder == 1 ? " block" : " blocks");
         }
-        return fullStacks + " stacks + " + remainder;
+        String stackText = fullStacks + (fullStacks == 1 ? " stack" : " stacks");
+        if (remainder == 0) {
+            return stackText;
+        }
+        return stackText + " + " + remainder;
     }
 
     public String coveragePercent() {

@@ -26,16 +26,16 @@
 		}
 	],
 	"depends": {
-		"fabricloader": ">=0.18.4",
-		"minecraft": "~1.21.11",
-		"java": ">=21",
+		"fabricloader": ">=0.19.2",
+		"minecraft": "~26.1.2",
+		"java": ">=25",
 		"fabric-api": "*",
-		"cloth-config": ">=21.11.153",
-		"xaeroworldmap": ">=1.40.11"
+		"cloth-config": ">=26.1.154",
+		"xaeroworldmap": ">=1.40.18"
 	},
 	"suggests": {
-		"modmenu": ">=15.0.0-beta.3",
-		"xaerominimap": ">=25.3.10"
+		"modmenu": ">=18.0.0-beta.1",
+		"xaerominimap": ">=25.3.14"
 	}
 }
 

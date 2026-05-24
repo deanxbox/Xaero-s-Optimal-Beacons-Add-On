@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Locale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
@@ -170,7 +170,7 @@ public abstract class GuiMapMixin {
     }
 
     @Inject(method = "renderPreDropdown", at = @At("TAIL"))
-    private void renderBeaconUi(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+    private void renderBeaconUi(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
         ResourceKey<Level> dimension = lastViewedDimensionId;
         if (dimension == null) {
             return;
@@ -184,10 +184,11 @@ public abstract class GuiMapMixin {
         renderPlanStatsPanel(guiGraphics, plan);
     }
 
-    private void renderPlanStatsPanel(GuiGraphics guiGraphics, BeaconPlacementPlan plan) {
+    private void renderPlanStatsPanel(GuiGraphicsExtractor guiGraphics, BeaconPlacementPlan plan) {
         Minecraft minecraft = Minecraft.getInstance();
         Font font = minecraft.font;
         BeaconOverlayState state = BeaconOverlayState.getInstance();
+        BeaconClientConfig config = BeaconClientConfig.get();
         List<String> lines = new ArrayList<>();
         lines.add("Beacon Plan");
         lines.add(plan.preference().displayName() + " | " + plan.snapMode().displayName());
@@ -198,10 +199,12 @@ public abstract class GuiMapMixin {
             lines.add("Right-click plan to move gaps");
         }
 
-        List<String> placementLines = BeaconPlanExport.numberedPlacementLines(plan, 6);
-        lines.addAll(placementLines);
-        if (plan.beaconCount() > placementLines.size()) {
-            lines.add("+" + (plan.beaconCount() - placementLines.size()) + " more placements");
+        if (config.ui.showPlanLabels) {
+            List<String> placementLines = BeaconPlanExport.numberedPlacementLines(plan, 6);
+            lines.addAll(placementLines);
+            if (plan.beaconCount() > placementLines.size()) {
+                lines.add("+" + (plan.beaconCount() - placementLines.size()) + " more placements");
+            }
         }
 
         int width = 0;
@@ -223,7 +226,7 @@ public abstract class GuiMapMixin {
         int lineY = y + 4;
         for (int index = 0; index < lines.size(); index++) {
             int color = index == 0 ? 0xFFF7FBFF : 0xFFDCE7EF;
-            guiGraphics.drawString(font, lines.get(index), x + 6, lineY, color, false);
+            guiGraphics.text(font, lines.get(index), x + 6, lineY, color, false);
             lineY += lineHeight;
         }
     }
@@ -236,7 +239,7 @@ public abstract class GuiMapMixin {
         Minecraft minecraft = Minecraft.getInstance();
         minecraft.keyboardHandler.setClipboard(BeaconPlanExport.toClipboardText(plan));
         if (minecraft.player != null) {
-            minecraft.player.displayClientMessage(Component.literal("Copied beacon plan to clipboard."), false);
+            minecraft.player.sendSystemMessage(Component.literal("Copied beacon plan to clipboard."));
         }
     }
 
@@ -245,10 +248,10 @@ public abstract class GuiMapMixin {
         if (minecraft.player == null) {
             return;
         }
-        minecraft.player.displayClientMessage(Component.literal(plan.preference().displayName() + " | " + plan.snapMode().displayName()), false);
-        minecraft.player.displayClientMessage(Component.literal("Tier " + plan.tier().tier() + " | " + plan.beaconCount() + " beacons | " + coverageText(plan)), false);
+        minecraft.player.sendSystemMessage(Component.literal(plan.preference().displayName() + " | " + plan.snapMode().displayName()));
+        minecraft.player.sendSystemMessage(Component.literal("Tier " + plan.tier().tier() + " | " + plan.beaconCount() + " beacons | " + coverageText(plan)));
         for (String line : BeaconPlanExport.numberedPlacementLines(plan)) {
-            minecraft.player.displayClientMessage(Component.literal(line), false);
+            minecraft.player.sendSystemMessage(Component.literal(line));
         }
     }
 
@@ -296,7 +299,7 @@ public abstract class GuiMapMixin {
         state.setSelectedPlanTier(tier);
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player != null) {
-            minecraft.player.displayClientMessage(Component.literal("Planning tier set to T" + tier.tier() + "."), false);
+            minecraft.player.sendSystemMessage(Component.literal("Planning tier set to T" + tier.tier() + "."));
         }
     }
 

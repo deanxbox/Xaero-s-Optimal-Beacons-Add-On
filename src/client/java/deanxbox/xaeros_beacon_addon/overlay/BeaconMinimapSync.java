@@ -5,6 +5,7 @@ import deanxbox.xaeros_beacon_addon.beacon.BeaconPlacementPlan;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import net.minecraft.resources.Identifier;
 import xaero.common.XaeroMinimapSession;
 import xaero.common.minimap.waypoints.Waypoint;
@@ -16,6 +17,10 @@ import xaero.hud.minimap.world.MinimapWorld;
 public final class BeaconMinimapSync {
     private static final Identifier CUSTOM_WAYPOINTS_KEY = Identifier.fromNamespaceAndPath(XaerosOptimalBeaconsAddOn.MOD_ID, "beacon_markers");
     private static final String GENERATED_TEMP_PREFIX = "[Beacon Plan] ";
+    private static final long UNCHANGED_REFRESH_INTERVAL_NANOS = 5_000_000_000L;
+    private static MinimapWorld lastSyncedWorld;
+    private static int lastSyncedHash;
+    private static long lastSyncedNanos;
 
     private BeaconMinimapSync() {
     }
@@ -32,9 +37,8 @@ public final class BeaconMinimapSync {
         }
 
         MinimapWorld currentWorld = session.getWorldManager().getCurrentWorld();
-        var customWaypoints = session.getWorldManager().getCustomWaypoints(CUSTOM_WAYPOINTS_KEY);
-        customWaypoints.clear();
         if (currentWorld == null || currentWorld.getDimId() == null) {
+            resetSyncCache();
             return;
         }
 
@@ -43,6 +47,17 @@ public final class BeaconMinimapSync {
             .comparing(BeaconOverlay::source)
             .thenComparingInt(BeaconOverlay::z)
             .thenComparingInt(BeaconOverlay::x));
+
+        int syncHash = Objects.hash(currentWorld.getDimId(), overlays);
+        long now = System.nanoTime();
+        if (currentWorld == lastSyncedWorld
+            && syncHash == lastSyncedHash
+            && now - lastSyncedNanos < UNCHANGED_REFRESH_INTERVAL_NANOS) {
+            return;
+        }
+
+        var customWaypoints = session.getWorldManager().getCustomWaypoints(CUSTOM_WAYPOINTS_KEY);
+        customWaypoints.clear();
 
         int planIndex = 1;
         int manualIndex = 1;
@@ -63,6 +78,9 @@ public final class BeaconMinimapSync {
             waypoint.setTemporary(true);
             customWaypoints.put(uniqueId(overlay), waypoint);
         }
+        lastSyncedWorld = currentWorld;
+        lastSyncedHash = syncHash;
+        lastSyncedNanos = now;
     }
 
     public static void createPlanTemporaryWaypoints() {
@@ -131,6 +149,12 @@ public final class BeaconMinimapSync {
             }
         }
         currentWorld.getCurrentWaypointSet().removeAll(toRemove);
+    }
+
+    private static void resetSyncCache() {
+        lastSyncedWorld = null;
+        lastSyncedHash = 0;
+        lastSyncedNanos = 0L;
     }
 
     private static int uniqueId(BeaconOverlay overlay) {

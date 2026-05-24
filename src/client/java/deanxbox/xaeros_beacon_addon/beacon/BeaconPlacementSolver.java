@@ -390,11 +390,7 @@ public final class BeaconPlacementSolver {
     private static double calculateCoverageRatio(BlockArea area, List<BeaconPlacement> placements) {
         long coveredBlocks = 0L;
         for (int z = area.minZ(); z <= area.maxZ(); z++) {
-            for (int x = area.minX(); x <= area.maxX(); x++) {
-                if (coverageCount(placements, x, z) > 0) {
-                    coveredBlocks++;
-                }
-            }
+            coveredBlocks += coveredBlocksInRow(area, placements, z);
         }
         long totalArea = (long) area.width() * area.height();
         return totalArea == 0L ? 0.0D : (double) coveredBlocks / totalArea;
@@ -405,14 +401,82 @@ public final class BeaconPlacementSolver {
         BlockArea area = plan.targetArea();
         List<BeaconPlacement> placements = plan.placements();
         for (int z = area.minZ(); z <= area.maxZ(); z++) {
-            for (int x = area.minX(); x <= area.maxX(); x++) {
-                int coverage = coverageCount(placements, x, z);
-                if (coverage > 1) {
-                    overlap += coverage - 1L;
-                }
-            }
+            overlap += overlapInRow(area, placements, z);
         }
         return overlap;
+    }
+
+    private static long coveredBlocksInRow(BlockArea area, List<BeaconPlacement> placements, int z) {
+        List<int[]> intervals = rowCoverageIntervals(area, placements, z);
+        if (intervals.isEmpty()) {
+            return 0L;
+        }
+
+        intervals.sort(java.util.Comparator.comparingInt(interval -> interval[0]));
+        long covered = 0L;
+        int currentStart = intervals.getFirst()[0];
+        int currentEnd = intervals.getFirst()[1];
+        for (int index = 1; index < intervals.size(); index++) {
+            int[] interval = intervals.get(index);
+            if (interval[0] <= currentEnd + 1) {
+                currentEnd = Math.max(currentEnd, interval[1]);
+                continue;
+            }
+            covered += currentEnd - currentStart + 1L;
+            currentStart = interval[0];
+            currentEnd = interval[1];
+        }
+        covered += currentEnd - currentStart + 1L;
+        return covered;
+    }
+
+    private static long overlapInRow(BlockArea area, List<BeaconPlacement> placements, int z) {
+        List<int[]> intervals = rowCoverageIntervals(area, placements, z);
+        if (intervals.size() < 2) {
+            return 0L;
+        }
+
+        List<int[]> events = new ArrayList<>(intervals.size() * 2);
+        for (int[] interval : intervals) {
+            events.add(new int[] { interval[0], 1 });
+            events.add(new int[] { interval[1] + 1, -1 });
+        }
+        events.sort(java.util.Comparator
+            .comparingInt((int[] event) -> event[0])
+            .thenComparingInt(event -> event[1]));
+
+        long overlap = 0L;
+        int coverage = 0;
+        int previousX = area.minX();
+        int eventIndex = 0;
+        while (eventIndex < events.size()) {
+            int x = events.get(eventIndex)[0];
+            if (x > previousX && coverage > 1) {
+                overlap += (long) (x - previousX) * (coverage - 1L);
+            }
+            while (eventIndex < events.size() && events.get(eventIndex)[0] == x) {
+                coverage += events.get(eventIndex)[1];
+                eventIndex++;
+            }
+            previousX = x;
+        }
+        return overlap;
+    }
+
+    private static List<int[]> rowCoverageIntervals(BlockArea area, List<BeaconPlacement> placements, int z) {
+        List<int[]> intervals = new ArrayList<>();
+        for (BeaconPlacement placement : placements) {
+            int radius = placement.tier().horizontalRadius();
+            if (z < placement.z() - radius || z > placement.z() + radius) {
+                continue;
+            }
+            int startX = Math.max(area.minX(), placement.x() - radius);
+            int endX = Math.min(area.maxX(), placement.x() + radius);
+            if (startX <= endX) {
+                intervals.add(new int[] { startX, endX });
+            }
+        }
+        return intervals;
     }
 
     public static int coverageCount(List<BeaconPlacement> placements, int x, int z) {
