@@ -36,8 +36,6 @@ import xaero.map.gui.dropdown.rightclick.RightClickOption;
 
 @Mixin(GuiMap.class)
 public abstract class GuiMapMixin {
-    private static final double MIN_LABEL_PIXELS_PER_BLOCK = 0.5D;
-
     @Shadow
     private int rightClickX;
 
@@ -49,15 +47,6 @@ public abstract class GuiMapMixin {
 
     @Shadow
     private MapTileSelection mapTileSelection;
-
-    @Shadow
-    private double cameraX;
-
-    @Shadow
-    private double cameraZ;
-
-    @Shadow
-    private double scale;
 
     @Shadow
     private ResourceKey<Level> lastViewedDimensionId;

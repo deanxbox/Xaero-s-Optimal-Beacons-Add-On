@@ -6,7 +6,7 @@ Beacon planning tools for Xaero's World Map on Fabric.
 
 ## Version
 
-Current release: `v1.1.0`
+Current release: `v1.2.0`
 
 ## Features
 
@@ -46,41 +46,39 @@ Current release: `v1.1.0`
 
 ## Screenshots
 
-Replace the placeholder image paths below with your real screenshots before release.
-
 ### Beacon Preview
 
-![Beacon preview screenshot placeholder](https://cdn.modrinth.com/data/3pNfuOS8/images/0eedce8fe164dd53707ed0d5c8595bd42bcef0e7.png)
+![Beacon preview](https://cdn.modrinth.com/data/3pNfuOS8/images/0eedce8fe164dd53707ed0d5c8595bd42bcef0e7.png)
 
 ### Placement Plan
 
-![Placement plan screenshot placeholder](https://cdn.modrinth.com/data/3pNfuOS8/images/e93c6b2ae4e3ae95fcc426af4b3960cde4de0cba.png)
+![Placement plan](https://cdn.modrinth.com/data/3pNfuOS8/images/e93c6b2ae4e3ae95fcc426af4b3960cde4de0cba.png)
 
 ### Heatmap And Gap Controls
 
-![Heatmap screenshot placeholder](https://cdn.modrinth.com/data/3pNfuOS8/images/aa4014b40c280611df700aecd54a9f0f15b5b9a0.png)
+![Heatmap and gap controls](https://cdn.modrinth.com/data/3pNfuOS8/images/aa4014b40c280611df700aecd54a9f0f15b5b9a0.png)
 
 ### Mod Menu Configuration
 
-![Configuration screenshot placeholder](https://cdn.modrinth.com/data/3pNfuOS8/images/5f98ef51371da9a74f0c66dbffdd6a31525bb414.png)
+![Mod Menu configuration](https://cdn.modrinth.com/data/3pNfuOS8/images/5f98ef51371da9a74f0c66dbffdd6a31525bb414.png)
 
 ## Requirements
 
-- Minecraft `26.1.2`
-- Fabric Loader `0.19.2+`
-- Fabric API `0.149.0+26.1.2+`
-- Xaero's World Map `1.40.18+`
-- Cloth Config `26.1.154+`
-- Java `25+`
+- Minecraft `26.2`
+- Fabric Loader `0.19.3` or newer
+- Fabric API `0.157.0+26.2` or newer
+- Xaero's World Map `1.44.2` or newer
+- Cloth Config `26.2.155` or newer
+- Java `25` or newer
 
 Optional:
 
-- Xaero's Minimap `25.3.14+`
-- Mod Menu `18.0.0-beta.1+`
+- Xaero's Minimap `26.4.2` or newer
+- Mod Menu `20.0.1` or newer
 
 ## Installation
 
-1. Install Fabric Loader for Minecraft `26.1.2`.
+1. Install Fabric Loader for Minecraft `26.2`.
 2. Install Fabric API.
 3. Install Xaero's World Map.
 4. Drop `Xaero's Optimal Beacons Add-On` into your `mods` folder.

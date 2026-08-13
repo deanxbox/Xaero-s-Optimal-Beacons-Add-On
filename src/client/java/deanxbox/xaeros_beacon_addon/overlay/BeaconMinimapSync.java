@@ -7,8 +7,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import net.minecraft.resources.Identifier;
-import xaero.common.XaeroMinimapSession;
 import xaero.common.minimap.waypoints.Waypoint;
+import xaero.hud.minimap.BuiltInHudModules;
 import xaero.hud.minimap.module.MinimapSession;
 import xaero.hud.minimap.waypoint.WaypointColor;
 import xaero.hud.minimap.waypoint.WaypointPurpose;
@@ -16,6 +16,7 @@ import xaero.hud.minimap.world.MinimapWorld;
 
 public final class BeaconMinimapSync {
     private static final Identifier CUSTOM_WAYPOINTS_KEY = Identifier.fromNamespaceAndPath(XaerosOptimalBeaconsAddOn.MOD_ID, "beacon_markers");
+    private static final Identifier GENERATED_WAYPOINTS_ORIGIN = Identifier.fromNamespaceAndPath(XaerosOptimalBeaconsAddOn.MOD_ID, "generated_plan_waypoints");
     private static final String GENERATED_TEMP_PREFIX = "[Beacon Plan] ";
     private static final long UNCHANGED_REFRESH_INTERVAL_NANOS = 5_000_000_000L;
     private static MinimapWorld lastSyncedWorld;
@@ -26,12 +27,7 @@ public final class BeaconMinimapSync {
     }
 
     public static void syncCurrentWorld() {
-        XaeroMinimapSession minimapSession = XaeroMinimapSession.getCurrentSession();
-        if (minimapSession == null) {
-            return;
-        }
-
-        MinimapSession session = minimapSession.getMinimapProcessor().getSession();
+        MinimapSession session = BuiltInHudModules.MINIMAP.getCurrentSession();
         if (session == null) {
             return;
         }
@@ -59,6 +55,7 @@ public final class BeaconMinimapSync {
         var customWaypoints = session.getWorldManager().getCustomWaypoints(CUSTOM_WAYPOINTS_KEY);
         customWaypoints.clear();
 
+        int waypointId = 0;
         int planIndex = 1;
         int manualIndex = 1;
         for (BeaconOverlay overlay : overlays) {
@@ -68,15 +65,14 @@ public final class BeaconMinimapSync {
                 64,
                 overlay.z(),
                 nameFor(overlay, index),
-                initialsFor(overlay, index),
+                symbolFor(overlay, index),
                 colorFor(overlay),
                 WaypointPurpose.NORMAL,
                 true,
                 false
             );
-            waypoint.setSymbol(symbolFor(overlay, index));
             waypoint.setTemporary(true);
-            customWaypoints.put(uniqueId(overlay), waypoint);
+            customWaypoints.put(waypointId++, waypoint);
         }
         lastSyncedWorld = currentWorld;
         lastSyncedHash = syncHash;
@@ -106,14 +102,14 @@ public final class BeaconMinimapSync {
                 64,
                 overlay.z(),
                 GENERATED_TEMP_PREFIX + index,
-                "P" + index,
+                Integer.toString(index % 10),
                 WaypointColor.WHITE,
                 WaypointPurpose.NORMAL,
                 true,
                 false
             );
-            waypoint.setSymbol(Integer.toString(index % 10));
             waypoint.setTemporary(true);
+            waypoint.setThirdPartyOrigin(GENERATED_WAYPOINTS_ORIGIN);
             currentWorld.getCurrentWaypointSet().add(waypoint);
             index++;
         }
@@ -128,12 +124,7 @@ public final class BeaconMinimapSync {
     }
 
     private static MinimapWorld currentWorld() {
-        XaeroMinimapSession minimapSession = XaeroMinimapSession.getCurrentSession();
-        if (minimapSession == null) {
-            return null;
-        }
-
-        MinimapSession session = minimapSession.getMinimapProcessor().getSession();
+        MinimapSession session = BuiltInHudModules.MINIMAP.getCurrentSession();
         if (session == null) {
             return null;
         }
@@ -144,7 +135,7 @@ public final class BeaconMinimapSync {
     private static void removeGeneratedPlanWaypoints(MinimapWorld currentWorld) {
         List<Waypoint> toRemove = new ArrayList<>();
         for (Waypoint waypoint : currentWorld.getCurrentWaypointSet().getWaypoints()) {
-            if (waypoint.getName() != null && waypoint.getName().startsWith(GENERATED_TEMP_PREFIX)) {
+            if (GENERATED_WAYPOINTS_ORIGIN.equals(waypoint.getThirdPartyOrigin())) {
                 toRemove.add(waypoint);
             }
         }
@@ -157,17 +148,9 @@ public final class BeaconMinimapSync {
         lastSyncedNanos = 0L;
     }
 
-    private static int uniqueId(BeaconOverlay overlay) {
-        return java.util.Objects.hash(overlay.source(), overlay.x(), overlay.z());
-    }
-
     private static String nameFor(BeaconOverlay overlay, int index) {
         String prefix = overlay.source() == BeaconOverlaySource.MANUAL ? "Place Beacon Here" : "Optimal Beacon Placement";
         return prefix + " " + index + " (Tier " + overlay.tier().tier() + ")";
-    }
-
-    private static String initialsFor(BeaconOverlay overlay, int index) {
-        return overlay.source() == BeaconOverlaySource.MANUAL ? "B" + index : "O" + index;
     }
 
     private static String symbolFor(BeaconOverlay overlay, int index) {

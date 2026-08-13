@@ -7,7 +7,10 @@
 	"authors": [
 		"deanxbox"
 	],
-	"contact": {},
+	"contact": {
+		"sources": "https://github.com/deanxbox/Xaero-s-Optimal-Beacons-Add-On",
+		"issues": "https://github.com/deanxbox/Xaero-s-Optimal-Beacons-Add-On/issues"
+	},
 	"license": "MIT",
 	"icon": "assets/xaeros-optimal-beacons-add-on/icon.png",
 	"environment": "client",
@@ -15,9 +18,9 @@
 		"client": [
 			"deanxbox.xaeros_beacon_addon.XaerosOptimalBeaconsAddOnClient"
 		],
-        "modmenu": [
-            "deanxbox.xaeros_beacon_addon.integration.BeaconModMenuApi"
-        ]
+		"modmenu": [
+			"deanxbox.xaeros_beacon_addon.integration.BeaconModMenuApi"
+		]
 	},
 	"mixins": [
 		{
@@ -26,16 +29,16 @@
 		}
 	],
 	"depends": {
-		"fabricloader": ">=0.19.2",
-		"minecraft": "~26.1.2",
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~26.2",
 		"java": ">=25",
-		"fabric-api": "*",
-		"cloth-config": ">=26.1.154",
-		"xaeroworldmap": ">=1.40.18"
+		"fabric-api": ">=0.157.0",
+		"cloth-config": ">=26.2.155",
+		"xaeroworldmap": ">=1.44.2"
 	},
 	"suggests": {
-		"modmenu": ">=18.0.0-beta.1",
-		"xaerominimap": ">=25.3.14"
+		"modmenu": ">=20.0.1",
+		"xaerominimap": ">=26.4.2"
 	}
 }
 

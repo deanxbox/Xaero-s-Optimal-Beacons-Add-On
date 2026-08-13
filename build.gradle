@@ -46,6 +46,11 @@ dependencies {
     runtimeOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
     implementation "maven.modrinth:cloth-config:${project.cloth_config_version}"
     implementation "me.shedaniel.cloth:basic-math:0.6.1"
+
+	testImplementation sourceSets.client.output
+	testImplementation platform("org.junit:junit-bom:6.1.3")
+	testImplementation "org.junit.jupiter:junit-jupiter"
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 processResources {
@@ -58,6 +63,10 @@ processResources {
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.release = 25
+}
+
+tasks.named("test") {
+	useJUnitPlatform()
 }
 
 java {
