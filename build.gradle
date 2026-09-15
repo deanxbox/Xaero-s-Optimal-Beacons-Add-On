@@ -34,16 +34,16 @@ dependencies {
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-	modCompileOnly files("libs/xaeroworldmap-fabric-1.21.11-1.40.11.jar")
-	modRuntimeOnly files("libs/xaeroworldmap-fabric-1.21.11-1.40.11.jar")
-	modCompileOnly files("libs/xaerolib-fabric-1.21.11-1.1.0.jar")
-	modRuntimeOnly files("libs/xaerolib-fabric-1.21.11-1.1.0.jar")
-    modCompileOnly files("libs/xaerominimap-fabric-1.21.11-25.3.10.jar")
-    modRuntimeOnly files("libs/xaerominimap-fabric-1.21.11-25.3.10.jar")
+	modCompileOnly files("libs/xaeroworldmap-fabric-1.21.11-1.46.0.jar")
+	modRuntimeOnly files("libs/xaeroworldmap-fabric-1.21.11-1.46.0.jar")
+	modCompileOnly files("libs/xaerolib-fabric-1.21.11-1.7.3.jar")
+	modRuntimeOnly files("libs/xaerolib-fabric-1.21.11-1.7.3.jar")
+    modCompileOnly files("libs/xaerominimap-fabric-1.21.11-26.5.0.jar")
+    modRuntimeOnly files("libs/xaerominimap-fabric-1.21.11-26.5.0.jar")
     modImplementation files("libs/basic-math-0.6.1.jar")
 
-    modCompileOnly "com.terraformersmc:modmenu:15.0.0-beta.3"
-    modLocalRuntime "com.terraformersmc:modmenu:15.0.0-beta.3"
+    modCompileOnly "com.terraformersmc:modmenu:17.0.0"
+    modLocalRuntime "com.terraformersmc:modmenu:17.0.0"
     modImplementation "maven.modrinth:cloth-config:21.11.153+fabric"
 }
 
