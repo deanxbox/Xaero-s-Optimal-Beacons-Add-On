@@ -91,8 +91,8 @@ modrinth {
 	projectId = "xaeros-optimal-beacons-add-on"
 	versionNumber = project.version
 	versionType = "release"
-	uploadFile = remapJar
+	uploadFile = tasks.named("remapJar")
 	gameVersions = [project.minecraft_version]
 	loaders = ["fabric"]
-	changelog = providers.environment("RELEASE_NOTES").getOrElse("See the GitHub release for details.")
+	changelog = System.getenv("RELEASE_NOTES") ?: "See the GitHub release for details."
 }
