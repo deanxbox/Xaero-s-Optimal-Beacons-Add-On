@@ -1,6 +1,7 @@
 plugins {
 	id 'fabric-loom' version "${loom_version}"
 	id 'maven-publish'
+	id 'com.modrinth.minotaur' version '2.+'
 }
 
 version = project.mod_version
@@ -83,4 +84,15 @@ publishing {
 
 	repositories {
 	}
+}
+
+modrinth {
+	token = System.getenv("MODRINTH_TOKEN")
+	projectId = "xaeros-optimal-beacons-add-on"
+	versionNumber = project.version
+	versionType = "release"
+	uploadFile = remapJar
+	gameVersions = [project.minecraft_version]
+	loaders = ["fabric"]
+	changelog = providers.environment("RELEASE_NOTES").getOrElse("See the GitHub release for details.")
 }

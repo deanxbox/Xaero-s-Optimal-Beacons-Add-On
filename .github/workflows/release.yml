@@ -1,0 +1,34 @@
+# Publishes a build to Modrinth whenever a GitHub Release is published.
+# Works for any of the supported version branches (1.21.11, 26.1.2, 26.2)
+# since the release tag determines which commit/branch content gets built.
+
+name: publish to modrinth
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.tag_name }}
+      - name: validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'microsoft'
+      - name: make gradle wrapper executable
+        run: chmod +x ./gradlew
+      - name: publish to modrinth
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          RELEASE_NOTES: ${{ github.event.release.body }}
+        run: ./gradlew modrinth
