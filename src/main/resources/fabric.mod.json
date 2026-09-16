@@ -30,14 +30,14 @@
 	],
 	"depends": {
 		"fabricloader": ">=0.19.3",
-		"minecraft": "~26.2",
+		"minecraft": "~26.3",
 		"java": ">=25",
-		"fabric-api": ">=0.157.0",
-		"cloth-config": ">=26.2.155",
-		"xaeroworldmap": ">=1.44.2"
+		"fabric-api": ">=0.160.5",
+		"cloth-config": ">=26.3.158",
+		"xaeroworldmap": ">=1.46.2"
 	},
 	"suggests": {
-		"modmenu": ">=20.0.1",
+		"modmenu": ">=21.0.0-beta.1",
 		"xaerominimap": ">=26.4.2"
 	}
 }
