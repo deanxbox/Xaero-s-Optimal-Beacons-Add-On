@@ -11,6 +11,7 @@ import deanxbox.xaeros_beacon_addon.beacon.BlockArea;
 import deanxbox.xaeros_beacon_addon.beacon.GapDirection;
 import deanxbox.xaeros_beacon_addon.config.BeaconClientConfig;
 import deanxbox.xaeros_beacon_addon.menu.BeaconRightClickOption;
+import deanxbox.xaeros_beacon_addon.menu.BeaconTierMenu;
 import deanxbox.xaeros_beacon_addon.overlay.BeaconOverlay;
 import deanxbox.xaeros_beacon_addon.overlay.BeaconOverlaySource;
 import deanxbox.xaeros_beacon_addon.overlay.BeaconOverlayState;
@@ -32,6 +33,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import xaero.map.gui.GuiMap;
 import xaero.map.gui.MapTileSelection;
+import xaero.map.gui.dropdown.rightclick.GuiRightClickMenu;
 import xaero.map.gui.dropdown.rightclick.RightClickOption;
 
 @Mixin(GuiMap.class)
@@ -62,6 +64,9 @@ public abstract class GuiMapMixin {
     @Shadow
     private ResourceKey<Level> lastViewedDimensionId;
 
+    @Shadow
+    private GuiRightClickMenu rightClickMenu;
+
     @Inject(method = "getRightClickOptions", at = @At("RETURN"))
     private void addBeaconOptions(CallbackInfoReturnable<ArrayList<RightClickOption>> cir) {
         ResourceKey<Level> dimension = rightClickDim;
@@ -81,12 +86,11 @@ public abstract class GuiMapMixin {
         BeaconOverlay clickedOverlay = state.findOverlayAt(dimension, rightClickX, rightClickZ);
         BeaconOverlay clickedBeacon = state.findManualBeaconAt(dimension, rightClickX, rightClickZ);
         if (clickedBeacon != null) {
-            for (BeaconTier tier : BeaconTier.values()) {
-                BeaconTier selectedTier = tier;
-                options.add(new BeaconRightClickOption("Set Beacon Tier " + tier.tier(), nextIndex++, guiMap, screen ->
-                    state.updateManualBeaconTier(clickedBeacon, selectedTier)
-                ));
-            }
+            options.add(new BeaconRightClickOption("Set Beacon Tier", nextIndex++, guiMap, screen -> {
+                int menuX = rightClickMenu.getX();
+                int menuY = rightClickMenu.getY();
+                rightClickMenu = GuiRightClickMenu.getMenu(new BeaconTierMenu(clickedBeacon, state), guiMap, menuX, menuY, 150);
+            }));
             options.add(new BeaconRightClickOption("Remove Beacon Preview", nextIndex++, guiMap, screen ->
                 state.removeManualBeacon(clickedBeacon)
             ));

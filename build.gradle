@@ -94,5 +94,5 @@ modrinth {
 	uploadFile = tasks.named("remapJar")
 	gameVersions = [project.minecraft_version]
 	loaders = ["fabric"]
-	changelog = System.getenv("RELEASE_NOTES") ?: "See the GitHub release for details."
+	changelog = file("CHANGELOG.md").text
 }
