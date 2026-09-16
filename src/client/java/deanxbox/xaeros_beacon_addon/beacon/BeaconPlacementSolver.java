@@ -310,7 +310,7 @@ public final class BeaconPlacementSolver {
     }
 
     private static int nearestChunkCenter(int preferredCenter, int minCenter, int maxCenter) {
-        int lower = ((preferredCenter - 8) / 16) * 16 + 8;
+        int lower = Math.floorDiv(preferredCenter - 8, 16) * 16 + 8;
         int upper = lower + 16;
         int clampedLower = Math.max(minCenter, Math.min(maxCenter, lower));
         int clampedUpper = Math.max(minCenter, Math.min(maxCenter, upper));
