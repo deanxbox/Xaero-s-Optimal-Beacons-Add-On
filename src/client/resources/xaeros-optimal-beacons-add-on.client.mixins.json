@@ -3,6 +3,7 @@
 	"package": "deanxbox.xaeros_beacon_addon.mixin.client",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
+		"DropDownWidgetAccessor",
 		"GuiMapMixin",
 		"HighlighterRegistryMixin"
 	],
