@@ -96,6 +96,7 @@ public abstract class GuiMapMixin {
                 int menuX = rightClickMenu.getX();
                 int menuY = rightClickMenu.getY();
                 rightClickMenu = GuiRightClickMenu.getMenu(new BeaconTierMenu(clickedBeacon, state), guiMap, menuX, menuY, 150);
+                ((DropDownWidgetAccessor) rightClickMenu).setSelected(clickedBeacon.tier().ordinal());
             }));
             options.add(new BeaconRightClickOption("Remove Beacon Preview", nextIndex++, guiMap, screen ->
                 state.removeManualBeacon(clickedBeacon)
